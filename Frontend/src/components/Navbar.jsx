@@ -95,12 +95,11 @@ const Navbar = ({ onSelectCategory, onSearch }) => {
   }, [theme]);
 
   const categories = [
-    "Laptop",
-    "Headphone",
-    "Mobile",
-    "Electronics",
-    "Toys",
-    "Fashion",
+    "Casual",
+    "Sports",
+    "Running",
+    "Basketball",
+    "Limited Edition",
   ];
   return (
     <>

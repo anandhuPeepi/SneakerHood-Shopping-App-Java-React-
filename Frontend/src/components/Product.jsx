@@ -78,34 +78,33 @@ const Product = () => {
 
         <div className="right-column" style={{ width: "50%" }}>
           <div className="product-description">
-            <div style={{display:'flex',justifyContent:'space-between' }}>
-            <span style={{ fontSize: "1.2rem", fontWeight: 'lighter' }}>
-              {product.category}
-            </span>
-            <p className="release-date" style={{ marginBottom: "2rem" }}>
-              
-              <h6>Listed : <span> <i> {new Date(product.releaseDate).toLocaleDateString()}</i></span></h6>
-              {/* <i> {new Date(product.releaseDate).toLocaleDateString()}</i> */}
-            </p>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: "1.2rem", fontWeight: 'lighter' }}>
+                {product.category}
+              </span>
+              <p className="release-date" style={{ marginBottom: "2rem" }}>
+
+                <h6>Listed : <span> <i> {new Date(product.releaseDate).toLocaleDateString()}</i></span></h6>
+                {/* <i> {new Date(product.releaseDate).toLocaleDateString()}</i> */}
+              </p>
             </div>
-            
-           
-            <h1 style={{ fontSize: "2rem", marginBottom: "0.5rem",textTransform: 'capitalize', letterSpacing:'1px' }}>
+
+
+            <h1 style={{ fontSize: "2rem", marginBottom: "0.5rem", textTransform: 'capitalize', letterSpacing: '1px' }}>
               {product.name}
             </h1>
             <i style={{ marginBottom: "3rem" }}>{product.brand}</i>
-            <p style={{fontWeight:'bold',fontSize:'1rem',margin:'10px 0px 0px'}}>PRODUCT DESCRIPTION :</p>
+            <p style={{ fontWeight: 'bold', fontSize: '1rem', margin: '10px 0px 0px' }}>PRODUCT DESCRIPTION :</p>
             <p style={{ marginBottom: "1rem" }}>{product.description}</p>
           </div>
 
           <div className="product-price">
             <span style={{ fontSize: "2rem", fontWeight: "bold" }}>
-              {"$" + product.price}
+              {"€ " + product.price}
             </span>
             <button
-              className={`cart-btn ${
-                !product.productAvailable ? "disabled-btn" : ""
-              }`}
+              className={`cart-btn ${!product.productAvailable ? "disabled-btn" : ""
+                }`}
               onClick={handlAddToCart}
               disabled={!product.productAvailable}
               style={{
@@ -127,7 +126,7 @@ const Product = () => {
                 {product.stockQuantity}
               </i>
             </h6>
-          
+
           </div>
           <div className="update-button" style={{ display: "flex", gap: "1rem" }}>
             <button

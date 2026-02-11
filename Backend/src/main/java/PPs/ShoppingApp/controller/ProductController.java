@@ -1,4 +1,5 @@
 package PPs.ShoppingApp.controller;
+import PPs.ShoppingApp.Dto.ProductDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -31,7 +32,7 @@ public class ProductController {
     private ProductService prodService;
 
     @GetMapping("/products")
-    public ResponseEntity<Page<Product>> getAllProducts(
+    public ResponseEntity<Page<ProductDTO>> getAllProducts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "8") int size,
             @RequestParam(required = false) String category
@@ -50,6 +51,7 @@ public class ProductController {
                 HttpStatus.OK
         );
     }
+
 
 
 

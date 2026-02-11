@@ -1,9 +1,8 @@
 package PPs.ShoppingApp.service;
+import PPs.ShoppingApp.Dto.ProductDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-
-
 import PPs.ShoppingApp.model.Product;
 import PPs.ShoppingApp.repo.ProductRepo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,15 +18,33 @@ import java.util.List;
 @Service
 public class ProductService {
 
+    private ProductDTO toDto(Product p) {
+        ProductDTO dto = new ProductDTO();
+        dto.setId(p.getId());
+        dto.setName(p.getName());
+        dto.setDescription(p.getDescription());
+        dto.setBrand(p.getBrand());
+        dto.setPrice(p.getPrice());
+        dto.setCategory(p.getCategory());
+        dto.setReleaseDate(p.getReleaseDate());
+        dto.setProductAvailable(p.isProductAvailable());
+        dto.setStockQuantity(p.getStockQuantity());
+        dto.setImageName(p.getImageName());
+        dto.setImageType(p.getImageType());
+
+
+        return dto;
+    }
+
     @Autowired
     private ProductRepo prodRepo;
 
-    public Page<Product> getAllProducts(Pageable pageable) {
-        return prodRepo.findAll(pageable);
+    public Page<ProductDTO> getAllProducts(Pageable pageable) {
+        return prodRepo.findAll(pageable).map(this::toDto);
     }
 
-    public Page<Product> getProductsByCategory(String category, Pageable pageable) {
-        return prodRepo.findByCategory(category, pageable);
+    public Page<ProductDTO> getProductsByCategory(String category, Pageable pageable) {
+        return prodRepo.findByCategory(category, pageable).map(this::toDto);
     }
 
 

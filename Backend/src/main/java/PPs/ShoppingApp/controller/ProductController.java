@@ -1,27 +1,20 @@
 package PPs.ShoppingApp.controller;
-import PPs.ShoppingApp.Dto.ProductDTO;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
+import PPs.ShoppingApp.Dto.ProductDTO;
+import PPs.ShoppingApp.model.Product;
+import PPs.ShoppingApp.service.ProductService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-
-import PPs.ShoppingApp.model.Product;
-import PPs.ShoppingApp.service.ProductService;
-import org.hibernate.service.Service;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-
 import java.io.IOException;
 import java.util.List;
-
-import static org.springframework.data.jpa.domain.AbstractPersistable_.id;
 
 @RestController
 @CrossOrigin
@@ -31,6 +24,9 @@ public class ProductController {
     @Autowired
     private ProductService prodService;
 
+    // ---------------------------
+    // LIST (DTO)
+    // ---------------------------
     @GetMapping("/products")
     public ResponseEntity<Page<ProductDTO>> getAllProducts(
             @RequestParam(defaultValue = "0") int page,
@@ -40,46 +36,49 @@ public class ProductController {
         Pageable pageable = PageRequest.of(page, size);
 
         if (category != null && !category.isEmpty()) {
-            return new ResponseEntity<>(
-                    prodService.getProductsByCategory(category, pageable),
-                    HttpStatus.OK
-            );
+            return ResponseEntity.ok(prodService.getProductsByCategory(category, pageable));
         }
 
-        return new ResponseEntity<>(
-                prodService.getAllProducts(pageable),
-                HttpStatus.OK
-        );
+        return ResponseEntity.ok(prodService.getAllProducts(pageable));
     }
 
-
-
-
+    // ---------------------------
+    // GET BY ID (DTO)
+    // ---------------------------
     @GetMapping("/product/{id}")
-    public ResponseEntity <Product> getProductById(@PathVariable int id){
+    public ResponseEntity<ProductDTO> getProductById(@PathVariable int id) {
+        ProductDTO productDto = prodService.getProdByIdDto(id);
 
-        Product product= prodService.getProdById(id);
-
-        if (product != null) {
-            return new ResponseEntity<>(product, HttpStatus.OK);
-        }else{
-          return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-    }}
-
-    @PostMapping("/product")
-    public ResponseEntity<?> addProduct(@RequestPart Product product, @RequestPart MultipartFile imageFile){
-
-        try {
-           Product product1 = prodService.addProduct(product, imageFile);
-           return new ResponseEntity<>(product1, HttpStatus.OK);
-        } catch (Exception e) {
-            return
-        new ResponseEntity<>(HttpStatus.NOT_FOUND);}
+        if (productDto != null) {
+            return ResponseEntity.ok(productDto);
+        }
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     }
 
+    // ---------------------------
+    // CREATE (stores entity in DB)
+    // ---------------------------
+    @PostMapping("/product")
+    public ResponseEntity<ProductDTO> addProduct(
+            @RequestPart Product product,
+            @RequestPart(required = false) MultipartFile imageFile
+    ) {
+        try {
+            Product saved = prodService.addProduct(product, imageFile);
+            // return DTO after saving
+            ProductDTO dto = prodService.getProdByIdDto(saved.getId());
+            return ResponseEntity.status(HttpStatus.CREATED).body(dto);
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
+    // ---------------------------
+    // IMAGE (Entity internal)
+    // ---------------------------
     @GetMapping("/product/{productId}/image")
     public ResponseEntity<byte[]> getImageProductById(@PathVariable int productId) {
-        Product product = prodService.getProdById(productId);
+        Product product = prodService.getProdByIdEntity(productId);
 
         if (product == null || product.getImageData() == null || product.getImageType() == null) {
             return ResponseEntity.noContent().build(); // 204
@@ -90,46 +89,48 @@ public class ProductController {
                 .body(product.getImageData());
     }
 
-
+    // ---------------------------
+    // UPDATE (stores entity in DB)
+    // ---------------------------
     @PutMapping("/product/{id}")
-    public ResponseEntity<String> updateProduct(@PathVariable  int id,
-                                                @RequestPart Product product,
-                                                @RequestPart MultipartFile imageFile){
-
-        Product product1 = null;
+    public ResponseEntity<String> updateProduct(
+            @PathVariable int id,
+            @RequestPart Product product,
+            @RequestPart(required = false) MultipartFile imageFile
+    ) {
         try {
-            product1 = prodService.updateProduct(id, product,imageFile);
+            Product updated = prodService.updateProduct(id, product, imageFile);
+
+            if (updated != null) {
+                return ResponseEntity.ok("Successfully Updated");
+            }
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Product not found");
         } catch (IOException e) {
-            return new ResponseEntity<>("Failed to update da", HttpStatus.BAD_REQUEST);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to update");
         }
-
-       if (product1 != null){
-           return new ResponseEntity<>("Successfully Updated da", HttpStatus.OK);
-       }
-       else {
-           return new ResponseEntity<>("Failed to update da", HttpStatus.BAD_REQUEST);
-       }
     }
 
+    // ---------------------------
+    // DELETE
+    // ---------------------------
     @DeleteMapping("/product/{id}")
-    public ResponseEntity<String> DeleteProduct(@PathVariable int id){
+    public ResponseEntity<String> deleteProduct(@PathVariable int id) {
+        Product product = prodService.getProdByIdEntity(id);
 
-       Product product = prodService.getProdById(id);
-       if (product != null)
-       {
+        if (product != null) {
             prodService.deleteProduct(id);
-           return new ResponseEntity<>("Deleted", HttpStatus.OK);
-       }
-       else
-       {
+            return ResponseEntity.ok("Deleted");
+        }
 
-           return new ResponseEntity<>("Product not found", HttpStatus.OK);
-       }
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Product not found");
     }
 
-    @GetMapping("products/search")
-    public ResponseEntity<List<Product>> searchProduct(@RequestParam String keyword){
-        List<Product> products = prodService.searchprduct(keyword);
-        return new ResponseEntity<>(products, HttpStatus.OK );
-        }
+    // ---------------------------
+    // SEARCH (DTO)
+    // ---------------------------
+    @GetMapping("/products/search")
+    public ResponseEntity<List<ProductDTO>> searchProduct(@RequestParam String keyword) {
+        List<ProductDTO> products = prodService.searchProductDto(keyword);
+        return ResponseEntity.ok(products);
+    }
 }

@@ -33,11 +33,24 @@ public class ProductController {
     @GetMapping("/products")
     public ResponseEntity<Page<Product>> getAllProducts(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "8") int size
+            @RequestParam(defaultValue = "8") int size,
+            @RequestParam(required = false) String category
     ) {
         Pageable pageable = PageRequest.of(page, size);
-        return new ResponseEntity<>(prodService.getAllProducts(pageable), HttpStatus.OK);
+
+        if (category != null && !category.isEmpty()) {
+            return new ResponseEntity<>(
+                    prodService.getProductsByCategory(category, pageable),
+                    HttpStatus.OK
+            );
+        }
+
+        return new ResponseEntity<>(
+                prodService.getAllProducts(pageable),
+                HttpStatus.OK
+        );
     }
+
 
 
     @GetMapping("/product/{id}")

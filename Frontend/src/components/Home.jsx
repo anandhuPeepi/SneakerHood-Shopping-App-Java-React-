@@ -5,16 +5,22 @@ import AppContext from "../Context/Context";
 import unplugged from "../assets/unplugged.png";
 
 const Home = ({ selectedCategory }) => {
-  const { data, isError, addToCart, refreshData, totalPages } = useContext(AppContext);
+  const { data, isError, addToCart, refreshData, totalPages } =
+    useContext(AppContext);
 
   const [products, setProducts] = useState([]);
   const [page, setPage] = useState(0);
   const [size] = useState(8);
 
-  // ✅ Fetch products whenever page changes
+  // ✅ RESET page when category changes (THIS is what you asked)
   useEffect(() => {
-    refreshData(page, size);
-  }, [refreshData, page, size]);
+    setPage(0);
+  }, [selectedCategory]);
+
+  // ✅ Fetch products whenever page OR category changes
+  useEffect(() => {
+    refreshData(page, size, selectedCategory); // ✅ pass category to backend
+  }, [refreshData, page, size, selectedCategory]);
 
   // ✅ Fetch images for each product
   useEffect(() => {
@@ -33,12 +39,10 @@ const Home = ({ selectedCategory }) => {
                 return { ...product, imageUrl };
               }
 
-              // 204 or anything else -> placeholder
               return { ...product, imageUrl: "placeholder-image-url" };
             } catch (error) {
               return { ...product, imageUrl: "placeholder-image-url" };
             }
-
           })
         );
         setProducts(updatedProducts);
@@ -50,14 +54,17 @@ const Home = ({ selectedCategory }) => {
     }
   }, [data]);
 
-  const filteredProducts = selectedCategory
-    ? products.filter((product) => product.category === selectedCategory)
-    : products;
+  // ✅ No need to filter on frontend anymore (backend already filters)
+  const finalProducts = products;
 
   if (isError) {
     return (
       <h2 className="text-center" style={{ padding: "18rem" }}>
-        <img src={unplugged} alt="Error" style={{ width: "100px", height: "100px" }} />
+        <img
+          src={unplugged}
+          alt="Error"
+          style={{ width: "100px", height: "100px" }}
+        />
       </h2>
     );
   }
@@ -74,16 +81,21 @@ const Home = ({ selectedCategory }) => {
           padding: "20px",
         }}
       >
-        {filteredProducts.length === 0 ? (
+        {finalProducts.length === 0 ? (
           <h2
             className="text-center"
-            style={{ display: "flex", justifyContent: "center", alignItems: "center" }}
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
           >
             No Products Available
           </h2>
         ) : (
-          filteredProducts.map((product) => {
-            const { id, brand, name, price, productAvailable, imageUrl } = product;
+          finalProducts.map((product) => {
+            const { id, brand, name, price, productAvailable, imageUrl } =
+              product;
 
             return (
               <div
@@ -102,7 +114,10 @@ const Home = ({ selectedCategory }) => {
                 }}
                 key={id}
               >
-                <Link to={`/product/${id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                <Link
+                  to={`/product/${id}`}
+                  style={{ textDecoration: "none", color: "inherit" }}
+                >
                   <img
                     src={imageUrl}
                     alt={name}
@@ -126,10 +141,19 @@ const Home = ({ selectedCategory }) => {
                     }}
                   >
                     <div>
-                      <h5 className="card-title" style={{ margin: "0 0 10px 0", fontSize: "1.2rem" }}>
+                      <h5
+                        className="card-title"
+                        style={{
+                          margin: "0 0 10px 0",
+                          fontSize: "1.2rem",
+                        }}
+                      >
                         {name.toUpperCase()}
                       </h5>
-                      <i className="card-brand" style={{ fontStyle: "italic", fontSize: "0.8rem" }}>
+                      <i
+                        className="card-brand"
+                        style={{ fontStyle: "italic", fontSize: "0.8rem" }}
+                      >
                         {"~ " + brand}
                       </i>
                     </div>
@@ -139,12 +163,15 @@ const Home = ({ selectedCategory }) => {
                     <div className="home-cart-price">
                       <h5
                         className="card-text"
-                        style={{ fontWeight: "600", fontSize: "1.1rem", marginBottom: "5px" }}
+                        style={{
+                          fontWeight: "600",
+                          fontSize: "1.1rem",
+                          marginBottom: "5px",
+                        }}
                       >
                         € {price}
                       </h5>
                     </div>
-
 
                     <button
                       className="btn-hover color-9"
@@ -166,7 +193,14 @@ const Home = ({ selectedCategory }) => {
       </div>
 
       {/* ✅ Pagination Buttons */}
-      <div style={{ display: "flex", justifyContent: "center", gap: "12px", paddingBottom: "30px" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          gap: "12px",
+          paddingBottom: "30px",
+        }}
+      >
         <button
           className="btn btn-secondary"
           onClick={() => setPage((p) => Math.max(p - 1, 0))}

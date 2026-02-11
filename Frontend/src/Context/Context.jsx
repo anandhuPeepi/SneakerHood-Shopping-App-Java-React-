@@ -46,16 +46,17 @@ export const AppProvider = ({ children }) => {
   };
 
   // ✅ Pagination-aware refreshData
-  const refreshData = useCallback(async (page = 0, size = 8) => {
+  const refreshData = useCallback(async (page = 0, size = 8, category = "") => {
     try {
       setIsError("");
 
-      // IMPORTANT:
-      // Your backend must return Page<Product> for /products endpoint:
-      // { content: [...], totalPages: X, number: page, size: size, ... }
-      const response = await axios.get(`/products?page=${page}&size=${size}`);
+      let url = `/products?page=${page}&size=${size}`;
+      if (category && category.trim() !== "") {
+        url += `&category=${encodeURIComponent(category)}`;
+      }
 
-      // If backend returns Page<Product>
+      const response = await axios.get(url);
+
       setData(response.data.content);
       setTotalPages(response.data.totalPages);
       setPageNumber(response.data.number);
@@ -66,6 +67,7 @@ export const AppProvider = ({ children }) => {
       setTotalPages(0);
     }
   }, []);
+
 
   const clearCart = () => {
     setCart([]);

@@ -26,6 +26,11 @@ public class ProductService {
         return prodRepo.findAll(pageable);
     }
 
+    public Page<Product> getProductsByCategory(String category, Pageable pageable) {
+        return prodRepo.findByCategory(category, pageable);
+    }
+
+
     public List<Product> getAllProducts() {
         return prodRepo.findAll();
     }

@@ -1,6 +1,7 @@
 package PPs.ShoppingApp.service;
 
 import PPs.ShoppingApp.Dto.ProductDTO;
+import PPs.ShoppingApp.exception.ProductNotFoundException;
 import PPs.ShoppingApp.model.Product;
 import PPs.ShoppingApp.repo.ProductRepo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
 
 import java.io.IOException;
 import java.util.List;
@@ -17,6 +19,12 @@ public class ProductService {
 
     @Autowired
     private ProductRepo prodRepo;
+
+    private Product getProductOrThrow(int id) {
+        return prodRepo.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException(id));
+    }
+
 
     // --------------------------
     // Entity -> DTO mapper
@@ -56,9 +64,10 @@ public class ProductService {
     }
 
     public ProductDTO getProdByIdDto(int id) {
-        Product product = prodRepo.findById(id).orElse(null);
-        return product == null ? null : toDto(product);
+        return toDto(getProductOrThrow(id));
     }
+
+
 
     public List<ProductDTO> searchProductDto(String keyword) {
         return prodRepo.searchProducts(keyword).stream().map(this::toDto).toList();
@@ -68,8 +77,9 @@ public class ProductService {
     // INTERNAL (Entity) - for image endpoint etc.
     // --------------------------
     public Product getProdByIdEntity(int id) {
-        return prodRepo.findById(id).orElse(null);
+        return getProductOrThrow(id);
     }
+
 
     // --------------------------
     // CREATE / UPDATE / DELETE (Entity in DB)
@@ -84,8 +94,8 @@ public class ProductService {
     }
 
     public Product updateProduct(int id, Product product, MultipartFile imageFile) throws IOException {
-        Product existing = prodRepo.findById(id).orElse(null);
-        if (existing == null) return null;
+
+        Product existing = getProductOrThrow(id);
 
         // Update normal fields
         existing.setName(product.getName());
@@ -107,7 +117,10 @@ public class ProductService {
         return prodRepo.save(existing);
     }
 
+
     public void deleteProduct(int id) {
-        prodRepo.deleteById(id);
+        Product existing = getProductOrThrow(id);
+        prodRepo.delete(existing);
     }
+
 }

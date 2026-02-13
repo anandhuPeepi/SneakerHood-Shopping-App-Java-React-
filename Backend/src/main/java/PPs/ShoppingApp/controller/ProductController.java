@@ -25,7 +25,7 @@ public class ProductController {
     private ProductService prodService;
 
     // ---------------------------
-    // LIST (DTO)
+    // LIST (DTO) + Pagination + Optional Category Filter
     // ---------------------------
     @GetMapping("/products")
     public ResponseEntity<Page<ProductDTO>> getAllProducts(
@@ -35,10 +35,12 @@ public class ProductController {
     ) {
         Pageable pageable = PageRequest.of(page, size);
 
-        if (category != null && !category.isEmpty()) {
+        // If category is provided, filter results by category
+        if (category != null && !category.isBlank()) {
             return ResponseEntity.ok(prodService.getProductsByCategory(category, pageable));
         }
 
+        // Otherwise return all products with pagination
         return ResponseEntity.ok(prodService.getAllProducts(pageable));
     }
 
@@ -47,30 +49,29 @@ public class ProductController {
     // ---------------------------
     @GetMapping("/product/{id}")
     public ResponseEntity<ProductDTO> getProductById(@PathVariable int id) {
-        ProductDTO productDto = prodService.getProdByIdDto(id);
 
-        if (productDto != null) {
-            return ResponseEntity.ok(productDto);
-        }
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        // If product does not exist, ProductNotFoundException is thrown
+        // GlobalExceptionHandler converts it into a 404 JSON response
+        return ResponseEntity.ok(prodService.getProdByIdDto(id));
     }
 
     // ---------------------------
-    // CREATE (stores entity in DB)
+    // CREATE (Entity saved, return DTO)
     // ---------------------------
     @PostMapping("/product")
     public ResponseEntity<ProductDTO> addProduct(
             @RequestPart Product product,
             @RequestPart(required = false) MultipartFile imageFile
-    ) {
-        try {
-            Product saved = prodService.addProduct(product, imageFile);
-            // return DTO after saving
-            ProductDTO dto = prodService.getProdByIdDto(saved.getId());
-            return ResponseEntity.status(HttpStatus.CREATED).body(dto);
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+    ) throws IOException {
+
+        // Save product and optional image
+        Product saved = prodService.addProduct(product, imageFile);
+
+        // Return DTO to avoid exposing imageData field
+        ProductDTO dto = prodService.getProdByIdDto(saved.getId());
+
+        // 201 CREATED indicates successful resource creation
+        return ResponseEntity.status(HttpStatus.CREATED).body(dto);
     }
 
     // ---------------------------
@@ -78,36 +79,36 @@ public class ProductController {
     // ---------------------------
     @GetMapping("/product/{productId}/image")
     public ResponseEntity<byte[]> getImageProductById(@PathVariable int productId) {
+
+        // If product does not exist → 404 handled globally
         Product product = prodService.getProdByIdEntity(productId);
 
-        if (product == null || product.getImageData() == null || product.getImageType() == null) {
-            return ResponseEntity.noContent().build(); // 204
+        // If image is not available → return 204 No Content
+        if (product.getImageData() == null || product.getImageType() == null) {
+            return ResponseEntity.noContent().build();
         }
 
+        // Return image with correct Content-Type header
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(product.getImageType()))
                 .body(product.getImageData());
     }
 
     // ---------------------------
-    // UPDATE (stores entity in DB)
+    // UPDATE (Entity saved)
     // ---------------------------
     @PutMapping("/product/{id}")
     public ResponseEntity<String> updateProduct(
             @PathVariable int id,
             @RequestPart Product product,
             @RequestPart(required = false) MultipartFile imageFile
-    ) {
-        try {
-            Product updated = prodService.updateProduct(id, product, imageFile);
+    ) throws IOException {
 
-            if (updated != null) {
-                return ResponseEntity.ok("Successfully Updated");
-            }
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Product not found");
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to update");
-        }
+        // If product does not exist → 404 handled globally
+        prodService.updateProduct(id, product, imageFile);
+
+        // 200 OK indicates successful update
+        return ResponseEntity.ok("Successfully Updated");
     }
 
     // ---------------------------
@@ -115,14 +116,13 @@ public class ProductController {
     // ---------------------------
     @DeleteMapping("/product/{id}")
     public ResponseEntity<String> deleteProduct(@PathVariable int id) {
-        Product product = prodService.getProdByIdEntity(id);
 
-        if (product != null) {
-            prodService.deleteProduct(id);
-            return ResponseEntity.ok("Deleted");
-        }
+        // If product does not exist → 404 handled globally
+        prodService.deleteProduct(id);
 
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Product not found");
+        // Return success response after deletion
+        return ResponseEntity.ok("Deleted");
+        // Optional improvement: return ResponseEntity.noContent().build(); for 204
     }
 
     // ---------------------------
@@ -130,7 +130,9 @@ public class ProductController {
     // ---------------------------
     @GetMapping("/products/search")
     public ResponseEntity<List<ProductDTO>> searchProduct(@RequestParam String keyword) {
-        List<ProductDTO> products = prodService.searchProductDto(keyword);
-        return ResponseEntity.ok(products);
+
+        // Returns matching products
+        // Empty list is valid response (not an error)
+        return ResponseEntity.ok(prodService.searchProductDto(keyword));
     }
 }

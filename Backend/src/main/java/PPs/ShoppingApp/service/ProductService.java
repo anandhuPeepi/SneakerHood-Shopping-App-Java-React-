@@ -10,7 +10,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-
 import java.io.IOException;
 import java.util.List;
 
@@ -24,7 +23,6 @@ public class ProductService {
         return prodRepo.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException(id));
     }
-
 
     // --------------------------
     // Entity -> DTO mapper
@@ -42,10 +40,24 @@ public class ProductService {
         dto.setStockQuantity(p.getStockQuantity());
         dto.setImageName(p.getImageName());
         dto.setImageType(p.getImageType());
-
-
-
         return dto;
+    }
+
+    // --------------------------
+    // DTO -> Entity mapper (NEW)
+    // --------------------------
+    private Product toEntity(ProductDTO dto) {
+        Product p = new Product();
+        // id is typically generated; we do NOT set it here for create
+        p.setName(dto.getName());
+        p.setDescription(dto.getDescription());
+        p.setBrand(dto.getBrand());
+        p.setPrice(dto.getPrice());
+        p.setCategory(dto.getCategory());
+        p.setReleaseDate(dto.getReleaseDate());
+        p.setProductAvailable(dto.isProductAvailable());
+        p.setStockQuantity(dto.getStockQuantity());
+        return p;
     }
 
     // --------------------------
@@ -67,8 +79,6 @@ public class ProductService {
         return toDto(getProductOrThrow(id));
     }
 
-
-
     public List<ProductDTO> searchProductDto(String keyword) {
         return prodRepo.searchProducts(keyword).stream().map(this::toDto).toList();
     }
@@ -80,32 +90,35 @@ public class ProductService {
         return getProductOrThrow(id);
     }
 
+    // --------------------------
+    // CREATE / UPDATE / DELETE
+    // --------------------------
+    public Product addProduct(ProductDTO dto, MultipartFile imageFile) throws IOException {
 
-    // --------------------------
-    // CREATE / UPDATE / DELETE (Entity in DB)
-    // --------------------------
-    public Product addProduct(Product product, MultipartFile imageFile) throws IOException {
+        Product product = toEntity(dto); // ✅ create entity from DTO
+
         if (imageFile != null && !imageFile.isEmpty()) {
             product.setImageName(imageFile.getOriginalFilename());
             product.setImageType(imageFile.getContentType());
             product.setImageData(imageFile.getBytes());
         }
+
         return prodRepo.save(product);
     }
 
-    public Product updateProduct(int id, Product product, MultipartFile imageFile) throws IOException {
+    public Product updateProduct(int id, ProductDTO dto, MultipartFile imageFile) throws IOException {
 
         Product existing = getProductOrThrow(id);
 
-        // Update normal fields
-        existing.setName(product.getName());
-        existing.setDescription(product.getDescription());
-        existing.setBrand(product.getBrand());
-        existing.setPrice(product.getPrice());
-        existing.setCategory(product.getCategory());
-        existing.setReleaseDate(product.getReleaseDate());
-        existing.setProductAvailable(product.isProductAvailable());
-        existing.setStockQuantity(product.getStockQuantity());
+        // Update normal fields from DTO
+        existing.setName(dto.getName());
+        existing.setDescription(dto.getDescription());
+        existing.setBrand(dto.getBrand());
+        existing.setPrice(dto.getPrice());
+        existing.setCategory(dto.getCategory());
+        existing.setReleaseDate(dto.getReleaseDate());
+        existing.setProductAvailable(dto.isProductAvailable());
+        existing.setStockQuantity(dto.getStockQuantity());
 
         // Update image only if a new image is provided
         if (imageFile != null && !imageFile.isEmpty()) {
@@ -117,10 +130,8 @@ public class ProductService {
         return prodRepo.save(existing);
     }
 
-
     public void deleteProduct(int id) {
         Product existing = getProductOrThrow(id);
         prodRepo.delete(existing);
     }
-
 }
